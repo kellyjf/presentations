@@ -1,0 +1,54 @@
+#! /bin/bash
+
+
+function teardown {
+	iptables -t nat -D POSTROUTING -s 172.25.0.0/16 \! -d 172.25.0.0/16 -j MASQUERADE
+	for i in 1 2 ; do
+		ip netns del exrouter$i
+		ip netns del exhost$i
+	done
+}
+function setup {
+	for i in 1 2 ; do
+		# Create namespaces
+		ip netns add exrouter$i
+		ip netns add exhost$i
+
+		# Create Interface pairs
+		ip link add exrouter$i-eth0 type veth peer name exrouter$i
+		ip link add exhost$i-eth0 type veth peer name exrouter$i-eth1
+		ip link set exhost$i-eth0 netns exhost$i name eth0
+		ip link set exrouter$i-eth0 netns exrouter$i name eth0
+		ip link set exrouter$i-eth1 netns exrouter$i name eth1
+
+		# Set up host
+		ip netns exec exhost$i ip link set eth0 up
+		ip netns exec exhost$i ip addr add 192.168.1.20/24 dev eth0
+		ip netns exec exhost$i ip route add default via 192.168.1.1 dev eth0
+
+		# Set up router
+		ip netns exec exrouter$i ip link set eth0 up
+		ip netns exec exrouter$i brctl addbr devbr 
+		ip netns exec exrouter$i brctl addif devbr eth1
+		ip netns exec exrouter$i ip link set devbr up 
+		ip netns exec exrouter$i ip link set eth1 up
+		ip netns exec exrouter$i ip addr add 192.168.1.1/24 dev devbr
+		ip netns exec exrouter$i ip addr add 172.25.${i}0.100/24 dev eth0
+		ip netns exec exrouter$i ip route add default via 172.25.${i}0.1 dev eth0
+		ip netns exec exrouter$i iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE 
+
+		# Configure base
+		ip link set exrouter$i up
+		ip addr add 172.25.${i}0.1/24 dev exrouter$i
+		PS1="[host$i]# " ip netns exec exhost$i  xterm -T host$i bash &
+		PS1="[router$i]# " ip netns exec exrouter$i  xterm -T router$i bash &
+	done
+	iptables -t nat -A POSTROUTING -s 172.25.0.0/16 \! -d 172.25.0.0/16 -j MASQUERADE
+}
+
+sname=$(basename $0)
+case "$sname" in 
+	teardown) teardown;;
+	*) teardown; setup ;;
+esac
+
