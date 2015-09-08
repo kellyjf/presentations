@@ -1,0 +1,18 @@
+#! /bin/bash
+
+case "$1" in
+	start)
+		iptables -A FORWARD -p tcp -j ACCEPT
+		iptables -A FORWARD -p udp -j ACCEPT
+		iptables -A FORWARD -p icmp -j ACCEPT
+		iptables -A FORWARD -j DROP
+		;;
+	stop)
+		iptables -D FORWARD -p tcp -j ACCEPT
+		iptables -D FORWARD -p udp -j ACCEPT
+		iptables -D FORWARD -p icmp -j ACCEPT
+		iptables -D FORWARD -j DROP
+		;;
+	*) echo "usage $0 start|stop"; exit ;;
+esac
+

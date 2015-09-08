@@ -2,10 +2,10 @@
 
 
 function teardown {
-	iptables -t nat -D POSTROUTING -s 172.25.0.0/16 \! -d 172.25.0.0/16 -j MASQUERADE
+	iptables -t nat -D POSTROUTING -s 172.25.0.0/16 \! -d 172.25.0.0/16 -j MASQUERADE > /dev/null 2>&1
 	for i in 1 2 ; do
-		ip netns del exrouter$i
-		ip netns del exhost$i
+		ip netns del exrouter$i > /dev/null 2>&1
+		ip netns del exhost$i > /dev/null 2>&1
 	done
 }
 function setup {
@@ -40,15 +40,21 @@ function setup {
 		# Configure base
 		ip link set exrouter$i up
 		ip addr add 172.25.${i}0.1/24 dev exrouter$i
-		PS1="[host$i]# " ip netns exec exhost$i  xterm -T host$i bash &
-		PS1="[router$i]# " ip netns exec exrouter$i  xterm -T router$i bash &
+		PS1="[host$i]# " ip netns exec exhost$i  xterm -fn 10x20 -T host$i bash &
+		PS1="[router$i]# " ip netns exec exrouter$i  xterm -fn 10x20 -T router$i bash &
 	done
 	iptables -t nat -A POSTROUTING -s 172.25.0.0/16 \! -d 172.25.0.0/16 -j MASQUERADE
 }
 
+
+if [ $UID -ne 0 ] ; then
+	sudo $0 "$@"
+	exit
+fi
+
 sname=$(basename $0)
 case "$sname" in 
-	teardown) teardown;;
+	teardown) pkill xterm; teardown; ./fw stop;;
 	*) teardown; setup ;;
 esac
 
