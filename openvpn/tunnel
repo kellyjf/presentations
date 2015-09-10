@@ -1,13 +1,18 @@
 #! /bin/bash
 
 case "$1" in 
-	*1) here=10; there=20;;
-	*2) here=20; there=10;;
-	*) echo "Usage $0 1|2"; exit;;
-esac
-
-ip tunnel add tunnel0 mode ipip remote 172.25.$there.100 local 172.25.$here.100
-ip addr add 10.0.0.$here peer 10.0.0.$there dev tunnel0
+	*1)
+ip tunnel add tunnel0 mode ipip remote 172.25.20.100 local 172.25.10.100
+ip addr add 10.0.0.1 peer 10.0.0.2 dev tunnel0
 ip link set tunl0 up
 ip link set tunnel0 up
+	;;
+
+	*2)
+ip tunnel add tunnel0 mode ipip remote 172.25.10.100 local 172.25.20.100
+ip addr add 10.0.0.2 peer 10.0.0.1 dev tunnel0
+ip link set tunl0 up
+ip link set tunnel0 up
+	;;
+esac
 
