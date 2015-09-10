@@ -1,0 +1,19 @@
+#! /bin/bash
+
+if [ $# -lt 1 ]; then
+	echo "Usage $0 client-name"
+	exit
+fi
+
+client=$1
+
+cat templates/client.ovpn
+echo "<ca>"
+sed -n -e '/BEGIN CERT/,/END CERT/p' keys/ca.crt
+echo "</ca>"
+echo "<cert>"
+sed -n -e '/BEGIN CERT/,/END CERT/p' keys/$client.crt
+echo "</cert>"
+echo "<key>"
+sed -n -e '/BEGIN PRIVATE/,/END PRIVATE/p' keys/$client.key
+echo "</key>"
