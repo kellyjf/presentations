@@ -1,0 +1,23 @@
+# Cleartext setup
+
+[router1] 
+	openvpn --ifconfig 10.0.0.1 10.0.0.2 --dev tun &
+[router2] 
+	openvpn --ifconfig 10.0.0.2 10.0.0.1 --dev tun --remote 172.25.10.100 &
+
+# Encrypted setup
+openvpn --genkey --secret secret.key
+[router1] 
+	openvpn --ifconfig 10.0.0.1 10.0.0.2 --dev tun --secret secret.key &
+[router2] 
+	openvpn --ifconfig 10.0.0.2 10.0.0.1 --dev tun  --remote 172.25.10.100 --secret secret.key &
+
+[router1] 
+	openvpn --dev tap &
+	ip link set tap0 up
+	brctl addif devbr tap0
+[router2] 
+	openvpn --dev tap --remote 172.25.10.100 &
+	ip link set tap0 up
+	brctl addif devbr tap0
+

@@ -8,6 +8,7 @@ case "$1" in
 		iptables -A FORWARD -j DROP
 		;;
 	stop)
+		exec > /dev/null 2>&1
 		iptables -D FORWARD -p tcp -j ACCEPT
 		iptables -D FORWARD -p udp -j ACCEPT
 		iptables -D FORWARD -p icmp -j ACCEPT
