@@ -1,0 +1,15 @@
+#! /bin/bash
+
+demo=${1:-demo1}
+pid=$2
+subnet=${3:-100}
+
+ip link del ${demo}-out
+
+ip link add ${demo}-out type veth peer name ${demo}
+ip link set ${demo} netns $pid
+nsenter -n -t ${pid} ip link set ${demo} name eth0 up
+nsenter -n -t ${pid} ip addr add 192.168.${subnet}.2 peer 192.168.${subnet}.1 dev eth0
+ip link set ${demo}-out up
+ip addr add 192.168.${subnet}.1 peer 192.168.${subnet}.2  dev ${demo}-out 
+

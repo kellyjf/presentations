@@ -1,0 +1,14 @@
+#! /bin/bash
+
+init="/bin/bash; echo"
+init="./remount"
+
+PS1='[demo1] ' cgexec -g memory:demos/demo1 \
+	-g cpuset:demos \
+	-g cpu:demos/demo1 \
+	xterm -T demo1 -e "PS1='[demo1] ' unshare -m -p -f -n -u -i -u --mount-proc $init demo1" &
+
+PS1='[demo2] ' cgexec -g memory:demos/demo2 \
+	-g cpuset:demos \
+	-g cpu:demos/demo2 \
+	xterm -T demo2 -e "PS1='[demo2] ' unshare -m -p -f -n -u -i -u --mount-proc $init demo2" &

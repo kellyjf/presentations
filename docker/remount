@@ -1,0 +1,16 @@
+#! /bin/bash
+
+demo=${1:-demo1}
+
+mount --make-rprivate /
+mount -t btrfs -o subvol=$demo /dev/sda5 /demos
+mount -t proc none /demos/proc
+mount -t sysfs none /demos/sys
+
+[ -d /demos/old-root ] || mkdir /demos/old-root
+pivot_root /demos /demos/old-root
+
+export PS1="[${demo}] "
+chroot /
+
+

@@ -1,0 +1,26 @@
+#! /bin/bash
+
+umount /btrfs
+mkfs.btrfs -f -L demos /dev/sda5 
+[ -d /btrfs ] || mkdir /btrfs
+mount -t btrfs /dev/sda5 /btrfs
+btrfs subvolume create /btrfs/centos
+docker export centos-base | tar -C /btrfs/centos -x -f -
+cp eat/* /btrfs/centos/root
+btrfs subvolume snapshot /btrfs/centos /btrfs/demo1
+btrfs subvolume snapshot /btrfs/centos /btrfs/demo2
+
+
+if false ; then 
+btrfs dev add -f /dev/sda6 /btrfs
+btrfs file show /btrfs
+btrfs file info /btrfs
+btrfs file idf /btrfs
+btrfs file df /btrfs
+btrfs file show /btrfs
+btrfs balance start -dconvert=raid1 -mconvert=raid1
+btrfs balance start -dconvert=raid1 -mconvert=raid1 /btrfs
+btrfs file show /btrfs
+btrfs file df /btrfs
+fi
+
