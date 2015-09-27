@@ -2,11 +2,15 @@
 
 
 function teardown {
+	pkill xterm
+	pkill openvpn
+	pkill openvpn
 	iptables -t nat -D POSTROUTING -s 172.25.0.0/16 \! -d 172.25.0.0/16 -j MASQUERADE > /dev/null 2>&1
 	for i in 1 2 ; do
 		ip netns del exrouter$i > /dev/null 2>&1
 		ip netns del exhost$i > /dev/null 2>&1
 	done
+	pgrep openvpn
 }
 function setup {
 	for i in 1 2 ; do
@@ -54,7 +58,7 @@ fi
 
 sname=$(basename $0)
 case "$sname" in 
-	teardown) pkill openvpn; pkill xterm; teardown; ./fw stop;;
+	teardown)  teardown; ./fw stop;;
 	*) teardown; setup ;;
 esac
 
