@@ -1,0 +1,44 @@
+docker pull centos:latest
+
+docker run --interactive=true --tty=true  \
+	--name=centos-base-demo \
+	--hostname=mydemo \
+	--cpu-shares=512 \
+	--cpuset-cpus=0 \
+	--cpuset-mems=0 \
+	--memory=300M \
+	centos:latest \
+	/bin/bash
+
+
+unshare --net /bin/bash
+
+	ip link ls
+	echo $$
+	PID=$$
+
+ip link add net-out type veth peer name net-in
+ip link set net-in netns $PID
+	ip link ls
+	ip link set net-in name eth0 up
+	ip addr add 192.168.55.5/24 dev eth0
+
+ip addr add 192.168.55.1/24 dev net-out
+ip link set net-out up
+	
+unshare --fork --ipc --uts
+	hostname demo
+
+unshare --fork --pid --mount-proc
+	ps -ef
+
+
+unshare --mount --fork
+	mount --make-rprivate /
+	mount -o subvol=demo1 LABEL=demos /demos
+	ls /demos
+	mount -t proc none /demos/proc
+	mount -t sysfs none /demos/sys
+	pivot_root /demos /demos/old-root/
+	chroot / /bin/bash
+ 
