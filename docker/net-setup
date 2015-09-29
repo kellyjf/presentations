@@ -1,0 +1,4 @@
+#! /bin/bash
+
+ps -ef | grep -v xterm| grep remount | grep unshare | sort| awk '{print "./net-ns",$NF,$2,100+NR}' | bash -x
+ 

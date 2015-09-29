@@ -10,6 +10,7 @@ docker run --interactive=true --tty=true  \
 	centos:latest \
 	/bin/bash
 
+echo -e "GET /images/json HTTP/1.1\r\n" | nc -U /var/run/docker.sock|tail -1|json_pp
 
 unshare --net /bin/bash
 
