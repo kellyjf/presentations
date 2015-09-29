@@ -4,12 +4,21 @@ demo=${1:-demo1}
 pid=$2
 subnet=${3:-100}
 
-ip link del ${demo}-out
+# Clean up from previous runs
+ip link del ${demo}-out > /dev/null 2>&1
+iptables -t nat -D POSTROUTING -s 192.168.${subnet}.0 -j MASQUERADE > /dev/null 2>&1
 
+# Create virtual network pair, and shove one side into the PID netns
 ip link add ${demo}-out type veth peer name ${demo}
 ip link set ${demo} netns $pid
+
+# Configure the remote NS interface
 nsenter -n -t ${pid} ip link set ${demo} name eth0 up
 nsenter -n -t ${pid} ip addr add 192.168.${subnet}.2 peer 192.168.${subnet}.1 dev eth0
+nsenter -n -t ${pid} ip route add default via 192.168.${subnet}.1  dev eth0 
+
+# Configure the external interface
 ip link set ${demo}-out up
 ip addr add 192.168.${subnet}.1 peer 192.168.${subnet}.2  dev ${demo}-out 
+iptables -t nat -A POSTROUTING -s 192.168.${subnet}.2 -j MASQUERADE
 

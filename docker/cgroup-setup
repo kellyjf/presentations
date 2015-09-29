@@ -13,22 +13,27 @@ cgdelete  -g memory:/demos
 cgdelete  -g cpuset:/demos
 
 # Constrain all the demos to CPU 0
-cgcreate  -g cpuset:/demos
+cgcreate  -g cpuset:/demos 
 cgset -r cpuset.cpus=0 /demos
 cgset -r cpuset.mems=0 /demos
+ls -ld /sys/fs/cgroup/cpuset 
 
 # Give Demo2 Twice the CPU of demo1
-cgcreate  -g cpu:/demos
-cgcreate  -g cpu:/demos/demo1
+cgcreate  -g cpu:/demos 
+cgcreate  -g cpu:/demos/demo1 
 cgset -r cpu.shares=512 /demos/demo1
-cgcreate  -g cpu:/demos/demo2
+cgcreate  -g cpu:/demos/demo2 
 cgset -r cpu.shares=1024 /demos/demo2
+ls -ld /sys/fs/cgroup/cpu/demos/demo*
 
 # Give Demo1 30M, Demo2 50M
-cgcreate  -g memory:/demos
-cgcreate  -g memory:/demos/demo1
+cgcreate  -g memory:/demos 
+cgcreate  -g memory:/demos/demo1 
 cgset -r memory.limit_in_bytes=${demo1} /demos/demo1
-cgset -r memory.memsw.limit_in_bytes=${demo1} /demos/demo1
-cgcreate  -g memory:/demos/demo2
+cgset -r memory.swappiness=0 /demos/demo1
+#cgset -r memory.memsw.limit_in_bytes=${demo1} /demos/demo1
+cgcreate  -g memory:/demos/demo2 
 cgset -r memory.limit_in_bytes=${demo2} /demos/demo2
-cgset -r memory.memsw.limit_in_bytes=${demo2} /demos/demo2
+cgset -r memory.swappiness=0 /demos/demo2
+#cgset -r memory.memsw.limit_in_bytes=${demo2} /demos/demo2
+ls -ld /sys/fs/cgroup/memory/demos/demo*
