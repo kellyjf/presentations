@@ -1,0 +1,10 @@
+[Unit]
+Description = Test Service
+
+
+[Service]
+Type=oneshot
+
+
+ExecStart=/bin/bash -c "logger -t JFK Test Service"
+

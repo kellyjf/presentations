@@ -1,0 +1,11 @@
+[Unit]
+Description = Notify Service
+
+
+[Service]
+Type=notify
+NotifyAccess = all
+
+
+ExecStart=/bin/bash -c "systemd-notify --status=Starting;sleep 5; systemd-notify --status=Done --ready; sleep 200"
+

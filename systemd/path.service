@@ -1,0 +1,9 @@
+[Unit]
+Description = React to path changes
+
+[Service]
+Type=oneshot
+
+ExecStart=/bin/bash -c "logger -t JFK Path Service"
+ExecStart=/bin/bash -c "rm -rf /home/jfkelly/incoming/*"
+

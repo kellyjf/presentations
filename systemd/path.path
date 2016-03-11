@@ -1,0 +1,8 @@
+[Unit]
+Description=Process Incoming Files
+
+[Path]
+PathExistsGlob=/home/jfkelly/incoming/*
+
+
+
