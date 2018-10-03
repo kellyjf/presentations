@@ -1,0 +1,7 @@
+#!/bin/bash
+
+fileanme="/etc/passwd"
+
+rootline=$(cat $filename| grep root)
+
+echo ROOTLINE is $rootline
