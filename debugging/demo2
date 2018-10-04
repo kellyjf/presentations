@@ -1,0 +1,28 @@
+#!/bin/bash
+
+source funcs
+
+for num in 1 2 ; do
+	ip netns del side$num &> /dev/null
+	ip netns add side$num &> /dev/null
+	ip netns exec side$num ip link set lo up
+done
+
+for num in 1 2 ; do
+	ip link add e1$num type veth peer name e2$num 
+	ip link set e1$num  netns side1 up
+	ip link set e2$num  netns side2 up
+done
+
+$NS1 brctl addbr br
+$NS1 brctl addif br e11
+$NS1 brctl addif br e12
+$NS1 ip link set br up
+$NS1 ip addr add 192.168.9.1/24 dev br
+
+
+$NS1 ip addr add 192.168.9.1/24 dev e11
+$NS1 ip addr add 192.168.9.2/24 dev e12
+$NS2 ip addr add 192.168.9.2/24 dev e21
+$NS2 ip addr add 192.168.9.1/24 dev e22
+$NS1 ping -c 4 192.168.9.3

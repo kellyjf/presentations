@@ -1,0 +1,6 @@
+#!/bin/bash
+
+
+NS1="ip netns exec side1"
+NS2="ip netns exec side2"
+
