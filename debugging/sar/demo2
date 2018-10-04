@@ -20,9 +20,11 @@ $NS1 brctl addif br e12
 $NS1 ip link set br up
 $NS1 ip addr add 192.168.9.1/24 dev br
 
+$NS2 brctl addbr br
+$NS2 brctl addif br e21
+$NS2 brctl addif br e22
+$NS2 ip link set br up
+$NS2 ip addr add 192.168.9.2/24 dev br
 
-$NS1 ip addr add 192.168.9.1/24 dev e11
-$NS1 ip addr add 192.168.9.2/24 dev e12
-$NS2 ip addr add 192.168.9.2/24 dev e21
-$NS2 ip addr add 192.168.9.1/24 dev e22
-$NS1 ping -c 4 192.168.9.3
+
+$NS1 ping -c 1 192.168.9.3
