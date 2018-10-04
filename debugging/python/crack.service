@@ -1,0 +1,7 @@
+[Unit]
+Description=Password Cracking Service
+
+
+[Service]
+ExecStart=/root/presentations/debugging/python/crack.py
+
