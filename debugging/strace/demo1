@@ -1,7 +1,11 @@
 #!/bin/bash
 
-fileanme="/etc/passwd"
+filename="/etc/passwd"
 
-rootline=$(cat $filename| grep root)
+logger -t $fi1ename "Testing"
 
-echo ROOTLINE is $rootline
+echo Hit any key...
+read ans < /dev/tty
+
+
+

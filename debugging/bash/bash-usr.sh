@@ -27,12 +27,15 @@ trap toggle1 USR1
 trap toggle2 USR2
 
 function amain() {
-while read word < /usr/share/dict/words; do
-	seeking=$word
-	case "$word" in 
-		*stuff*) echo $word ;;
-	esac
-done
+	while read word \
+#		< /usr/share/dict/words
+	do
+		seeking=$word
+		case "$word" in 
+			*stuff*) echo $word ;;
+		esac
+	done \
+	 < /usr/share/dict/words
 }
 
 function bmain() {
