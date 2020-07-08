@@ -1,0 +1,77 @@
+#!/bin/bash -eu
+
+function fail {
+	echo FAILURE
+}
+trap fail EXIT 
+
+source defs.sh
+
+MAIN="ip netns exec 1"
+INET="ip netns exec internet"
+BEAR1="ip netns exec bear1"
+BEAR2="ip netns exec bear2"
+ROUTER="ip netns exec router"
+CLIENT1="ip netns exec client1"
+CLIENT2="ip netns exec client2"
+
+function debug {
+	echo ===== INTERNET ======
+	$INET ip -4 -o addr ls  | sed -e 's/scope.*//'
+	echo ===== BEAR1 ======
+	$BEAR1 ip -4 -o addr ls  | sed -e 's/scope.*//'
+	echo ===== BEAR2 ======
+	$BEAR2 ip -4 -o addr ls  | sed -e 's/scope.*//'
+	echo ===== ROUTER ======
+	$ROUTER ip -4 -o addr ls  | sed -e 's/scope.*//'
+	echo ===== CLIENT1 ======
+	$CLIENT1 ip -4 -o addr ls  | sed -e 's/scope.*//'
+	echo ===== CLIENT2 ======
+	$CLIENT2 ip -4 -o addr ls  | sed -e 's/scope.*//'
+}
+	
+if [[ ${BASH_SOURCE} == $0 ]]; then
+	case "${1:-none}" in 
+	debug)  debug ;;
+	demo)
+		set -x
+		ip link del wan &> /dev/null || true
+		for ns in  internet bear1 bear2 router client1 client2; do
+			ip netns del $ns || true
+		done
+		rm -f /var/run/netns/main
+		ln -s /proc/1/ns/net /var/run/netns/main
+
+		newlink main internet  10.255.255	
+		newlink internet bear1 192.168.201	
+		newlink internet bear2 192.168.202	
+		newlink bear1 router 192.168.101
+		newlink bear2 router 192.168.102
+		newlink router client1 172.20.10 0 101 11
+		newlink router client2 172.20.10 0 102 12  
+		$ROUTER brctl addbr int-cabin
+		$ROUTER brctl addif int-cabin wan-11
+		$ROUTER brctl addif int-cabin wan-12
+		$ROUTER ip link set int-cabin up
+		$ROUTER ip addr add dev int-cabin 172.20.10.1/24
+
+		$MAIN iptables -t nat -D POSTROUTING -o bear-company -j MASQUERADE\
+			&>/dev/null  || true
+		$INET iptables -t nat -A POSTROUTING -o lan-255 -j MASQUERADE
+		$BEAR1 iptables -t nat -A POSTROUTING -o lan-201 -j MASQUERADE
+		$BEAR2 iptables -t nat -A POSTROUTING -o lan-202 -j MASQUERADE
+		$ROUTER iptables -t nat -A POSTROUTING -o lan-101 -j MASQUERADE
+		$ROUTER iptables -t nat -A POSTROUTING -o lan-102 -j MASQUERADE
+		
+		outaddr=8.8.8.8
+		echo dnsmasq --pid-file=/tmp/$nsname.pid \
+			--interface=${nsname} --except-interface=lo --bind-interfaces \
+			--dhcp-range=192.168.77.100,192.168.77.199 \
+			--dhcp-option=option:router,$outaddr \
+			--dhcp-option=option:dns-server,$outaddr \
+			--server 192.168.0.74
+		;;
+	esac
+fi
+trap - EXIT 
+echo SUCCESS
