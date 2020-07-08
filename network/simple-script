@@ -1,0 +1,26 @@
+#! /bin/bash 
+
+
+function commit {
+	local prefix=$(ipcalc -p 0 ${new_subnet_mask}|sed -e 's/.*=//')
+	ip addr flush dev $interface || true
+	ip -4 addr add $new_ip_address/$prefix dev $interface || true
+	ip -4 route add default via ${new_routers} dev $interface || true
+}
+
+function release {
+
+	ip addr flush dev $interface || true
+	# This will stop the dhclient in the namespace and exit the systemd service
+	exit
+}
+
+logger  -p info -t "${interface:-null}" "$0: ${reason:-null} ${new_ip_address:-noip}"
+case "$reason" in
+	BOUND|REBOOT)   commit ;;
+	EXPIRE|FAIL)    release;;
+	RENEW)          ;;
+	PREINIT)        ;;
+	*) ;;
+esac
+

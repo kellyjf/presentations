@@ -33,12 +33,13 @@ function debug {
 if [[ ${BASH_SOURCE} == $0 ]]; then
 	case "${1:-none}" in 
 	debug)  debug ;;
-	demo)
-		set -x
+	net*)
 		ip link del wan &> /dev/null || true
 		for ns in  internet bear1 bear2 router client1 client2; do
-			ip netns del $ns || true
+			ip netns del $ns  &> /dev/null || true
 		done
+
+		mkdir -p /var/run/netns
 		rm -f /var/run/netns/main
 		ln -s /proc/1/ns/net /var/run/netns/main
 
@@ -62,14 +63,20 @@ if [[ ${BASH_SOURCE} == $0 ]]; then
 		$BEAR2 iptables -t nat -A POSTROUTING -o lan-202 -j MASQUERADE
 		$ROUTER iptables -t nat -A POSTROUTING -o lan-101 -j MASQUERADE
 		$ROUTER iptables -t nat -A POSTROUTING -o lan-102 -j MASQUERADE
+		;;
+	ser*)
+		set -x
 		
-		outaddr=8.8.8.8
-		echo dnsmasq --pid-file=/tmp/$nsname.pid \
-			--interface=${nsname} --except-interface=lo --bind-interfaces \
-			--dhcp-range=192.168.77.100,192.168.77.199 \
-			--dhcp-option=option:router,$outaddr \
-			--dhcp-option=option:dns-server,$outaddr \
-			--server 192.168.0.74
+		kill $(cat /tmp/router.pid) || true
+		$ROUTER dnsmasq --pid-file=/tmp/router.pid \
+			--dhcp-range=172.20.10.101,172.20.10.199 \
+			--dhcp-option=option:router,172.20.10.1 \
+			--dhcp-option=option:dns-server,172.20.10.1 \
+			--server 172.27.0.11
+		kill $(cat /run/client1.pid) || true
+		kill $(cat /run/client2.pid) || true
+		$CLIENT1 dhclient -pf /run/client1.pid -H client1 -sf simple-script lan-11
+		$CLIENT2 dhclient -pf /run/client2.pid -H client2 -sf simple-script lan-12
 		;;
 	esac
 fi
