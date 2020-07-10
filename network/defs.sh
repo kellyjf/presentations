@@ -37,10 +37,15 @@ function newlink {
 	lanaddr="${subnet}.${lanhost}"
 
 	ip link del wan-${vid} &> /dev/null || true
-	ip link add link wan name wan-${vid} type vlan id $vid
-
 	ip link del lan-${vid} &> /dev/null || true
-	ip link add link lan name lan-${vid} type vlan id $vid
+
+	if [[ ${NONET:-} ]] ; then
+		ip link add wan-${vid} type veth peer name lan-${vid}
+	else
+		ip link add link wan name wan-${vid} type vlan id $vid
+		ip link add link lan name lan-${vid} type vlan id $vid
+	fi
+	 
 
 	ip link set wan-${vid} netns $wanname name $lanname
 	ip link set lan-${vid} netns $lanname name $wanname

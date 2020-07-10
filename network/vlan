@@ -1,0 +1,96 @@
+#!/bin/bash -eu
+
+function fail {
+	echo FAILURE
+}
+trap fail EXIT
+
+source defs.sh
+
+RA="ip netns exec ra"
+A1="ip netns exec a1"
+A2="ip netns exec a2"
+RB="ip netns exec rb"
+B1="ip netns exec b1"
+B2="ip netns exec b2"
+
+NONET=1
+
+function debug {
+	echo unimplemented
+}
+
+if [[ ${BASH_SOURCE} == $0 ]]; then
+	cmd="${1:-none}"
+	case $cmd in
+	debug)  debug ;;
+	net*)
+		set -x
+		# Clean up prior crashes
+		ip link del wan &> /dev/null || true
+		for ns in  ra rb a1 a2 b1 b2; do
+			ip netns del $ns  &> /dev/null || true
+		done
+
+		# Fake out iproute2 tools to use "main" as a namespace
+		mkdir -p /var/run/netns
+		rm -f /var/run/netns/main
+		ln -s /proc/1/ns/net /var/run/netns/main
+
+		# Build the network
+		newlink ra a1 192.168.101 1 11 11
+		newlink ra a2 192.168.102 1 12 21
+		newlink rb b1 192.168.101 2 21 12
+		newlink rb b2 192.168.102 2 22 22
+
+		# Create a vlan trunk between routers
+		newlink ra rb noip 0 0 
+
+		# Create VLAN virtual interfaces off of trunk ens
+		$RA ip link add link rb name v101 type vlan id 101
+		$RA ip link add link rb name v102 type vlan id 102
+		$RB ip link add link ra name v101 type vlan id 101
+		$RB ip link add link ra name v102 type vlan id 102
+
+		# Setup bridges in RA
+		$RA brctl addbr devel
+		$RA brctl addif devel a1
+		$RA brctl addif devel v101
+		$RA brctl addbr test
+		$RA brctl addif test a2
+		$RA brctl addif test v102
+		for intf in devel test v101 v102; do
+			$RA ip link set $intf up
+		done 
+
+		# Setup bridges in RB
+		$RB brctl addbr devel
+		$RB brctl addif devel b1
+		$RB brctl addif devel v101
+		$RB brctl addbr test
+		$RB brctl addif test b2
+		$RB brctl addif test v102
+		for intf in devel test v101 v102; do
+			$RB ip link set $intf up
+		done 
+
+		;;
+	te*)
+		echo Ping a1 to b1
+		$A1 ping -c1 192.168.101.21 > /dev/null && echo WORKS
+		echo Ping a2 to b2
+		$A2 ping -c1 192.168.102.22 > /dev/null && echo WORKS
+		echo Ping fails a1 to b2
+		$A1 ping -c1 192.168.102.22 > /dev/null || echo WORKS
+		;;
+	none|help)
+		echo "Usage: $0 [network|test|help]"
+		;;
+	*)
+		echo "What do you mean, $cmd?"
+		false
+		;;
+	esac
+fi
+trap - EXIT
+echo SUCCESS
