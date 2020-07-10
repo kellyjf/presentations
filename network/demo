@@ -3,12 +3,12 @@
 function fail {
 	echo FAILURE
 }
-trap fail EXIT 
+trap fail EXIT
 
 source defs.sh
 
-MAIN="ip netns exec 1"
-INET="ip netns exec internet"
+MAIN="ip netns exec main"
+INET="ip netns exec inet"
 BEAR1="ip netns exec bear1"
 BEAR2="ip netns exec bear2"
 ROUTER="ip netns exec router"
@@ -29,44 +29,52 @@ function debug {
 	echo ===== CLIENT2 ======
 	$CLIENT2 ip -4 -o addr ls  | sed -e 's/scope.*//'
 }
-	
+
 if [[ ${BASH_SOURCE} == $0 ]]; then
-	case "${1:-none}" in 
+	cmd="${1:-none}"
+	case $cmd in
 	debug)  debug ;;
 	net*)
+		# Clean up prior crashes
 		ip link del wan &> /dev/null || true
-		for ns in  internet bear1 bear2 router client1 client2; do
+		for ns in  inet bear1 bear2 router client1 client2; do
 			ip netns del $ns  &> /dev/null || true
 		done
 
+		# Fake out iproute2 tools to use "main" as a namespace
 		mkdir -p /var/run/netns
 		rm -f /var/run/netns/main
 		ln -s /proc/1/ns/net /var/run/netns/main
 
-		newlink main internet  10.255.255	
-		newlink internet bear1 192.168.201	
-		newlink internet bear2 192.168.202	
+		# Build the network
+		newlink main inet  10.255.255
+		newlink inet bear1 192.168.201
+		newlink inet bear2 192.168.202
 		newlink bear1 router 192.168.101
 		newlink bear2 router 192.168.102
+
+		# Add clients to a bridge in the router namespace
 		newlink router client1 172.20.10 0 101 11
-		newlink router client2 172.20.10 0 102 12  
-		$ROUTER brctl addbr int-cabin
-		$ROUTER brctl addif int-cabin wan-11
-		$ROUTER brctl addif int-cabin wan-12
-		$ROUTER ip link set int-cabin up
-		$ROUTER ip addr add dev int-cabin 172.20.10.1/24
+		newlink router client2 172.20.10 0 102 12
+		$ROUTER brctl addbr clients
+		$ROUTER brctl addif clients client1
+		$ROUTER brctl addif clients client2
+		$ROUTER ip link set clients up
+		$ROUTER ip addr add dev clients 172.20.10.1/24
 
 		$MAIN iptables -t nat -D POSTROUTING -o bear-company -j MASQUERADE\
 			&>/dev/null  || true
-		$INET iptables -t nat -A POSTROUTING -o lan-255 -j MASQUERADE
-		$BEAR1 iptables -t nat -A POSTROUTING -o lan-201 -j MASQUERADE
-		$BEAR2 iptables -t nat -A POSTROUTING -o lan-202 -j MASQUERADE
-		$ROUTER iptables -t nat -A POSTROUTING -o lan-101 -j MASQUERADE
-		$ROUTER iptables -t nat -A POSTROUTING -o lan-102 -j MASQUERADE
+		$INET iptables -t nat -A POSTROUTING -o main -j MASQUERADE
+		$BEAR1 iptables -t nat -A POSTROUTING -o inet -j MASQUERADE
+		$BEAR2 iptables -t nat -A POSTROUTING -o inet -j MASQUERADE
+		$ROUTER iptables -t nat -A POSTROUTING -o bear1 -j MASQUERADE
+		$ROUTER iptables -t nat -A POSTROUTING -o bear2 -j MASQUERADE
+		$MAIN iptables -t nat -D POSTROUTING -o bear-company -j MASQUERADE &> /dev/null || true
+		$MAIN iptables -t nat -A POSTROUTING -o bear-company -j MASQUERADE
 		;;
 	ser*)
 		set -x
-		
+
 		kill $(cat /tmp/router.pid) || true
 		$ROUTER dnsmasq --pid-file=/tmp/router.pid \
 			--dhcp-range=172.20.10.101,172.20.10.199 \
@@ -75,10 +83,17 @@ if [[ ${BASH_SOURCE} == $0 ]]; then
 			--server 172.27.0.11
 		kill $(cat /run/client1.pid) || true
 		kill $(cat /run/client2.pid) || true
-		$CLIENT1 dhclient -pf /run/client1.pid -H client1 -sf simple-script lan-11
-		$CLIENT2 dhclient -pf /run/client2.pid -H client2 -sf simple-script lan-12
+		$CLIENT1 dhclient -pf /run/client1.pid -H client1 -sf simple-script router
+		$CLIENT2 dhclient -pf /run/client2.pid -H client2 -sf simple-script router
+		;;
+	none|help)
+		echo "Usage: $0 [network|services|debug|help]"
+		;;
+	*)
+		echo "What do you mean, $cmd?"
+		false
 		;;
 	esac
 fi
-trap - EXIT 
+trap - EXIT
 echo SUCCESS

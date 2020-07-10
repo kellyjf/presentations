@@ -19,8 +19,8 @@ function newlink {
 	for ns in $wanname $lanname; do
 		if ! ip netns ls | grep $ns &> /dev/null ; then
 			newns $ns
-		fi	
-	done	
+		fi
+	done
 
 	if ! [[  -e /sys/class/net/wan ]] ; then
 		ip link del wan &> /dev/null || true
@@ -28,7 +28,7 @@ function newlink {
 		ip link add wan type veth peer name lan
 		ip link set wan up
 		ip link set lan up
-	fi	
+	fi
 
 	if [[ ! $vid ]]; then
 		vid=${subnet##*.}
@@ -42,18 +42,18 @@ function newlink {
 	ip link del lan-${vid} &> /dev/null || true
 	ip link add link lan name lan-${vid} type vlan id $vid
 
-	ip link set wan-${vid} netns $wanname
-	ip link set lan-${vid} netns $lanname
+	ip link set wan-${vid} netns $wanname name $lanname
+	ip link set lan-${vid} netns $lanname name $wanname
 
-	ip netns exec $wanname ip link set wan-${vid} up	
-	ip netns exec $lanname ip link set lan-${vid} up	
+	ip netns exec $wanname ip link set $lanname up
+	ip netns exec $lanname ip link set $wanname up
 
 
 	if [[ ${wanhost} != 0 ]]; then
-		ip netns exec $wanname ip addr add dev wan-${vid} ${wanaddr}/24	
+		ip netns exec $wanname ip addr add dev ${lanname} ${wanaddr}/24
 	fi
 	if [[ ${lanhost} != 0 ]]; then
-		ip netns exec $lanname ip addr add dev lan-${vid} ${lanaddr}/24	
+		ip netns exec $lanname ip addr add dev $wanname ${lanaddr}/24
 		ip netns exec $lanname ip route replace default via ${subnet}.1 
 	fi
 }
