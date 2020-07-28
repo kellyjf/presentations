@@ -19,18 +19,21 @@ NONET=1
 function debug {
 	echo unimplemented
 }
-
+function clean {
+	# Clean up prior crashes
+	ip link del wan &> /dev/null || true
+	for ns in  ra rb a1 a2 b1 b2; do
+		ip netns del $ns  &> /dev/null || true
+	done
+}
 if [[ ${BASH_SOURCE} == $0 ]]; then
 	cmd="${1:-none}"
 	case $cmd in
 	debug)  debug ;;
+	clean)  clean ;;
 	net*)
 		set -x
-		# Clean up prior crashes
-		ip link del wan &> /dev/null || true
-		for ns in  ra rb a1 a2 b1 b2; do
-			ip netns del $ns  &> /dev/null || true
-		done
+		clean
 
 		# Fake out iproute2 tools to use "main" as a namespace
 		mkdir -p /var/run/netns
@@ -84,7 +87,7 @@ if [[ ${BASH_SOURCE} == $0 ]]; then
 		$A1 ping -c1 192.168.102.22 > /dev/null || echo WORKS
 		;;
 	none|help)
-		echo "Usage: $0 [network|test|help]"
+		echo "Usage: $0 [network|clean|test|help]"
 		;;
 	*)
 		echo "What do you mean, $cmd?"

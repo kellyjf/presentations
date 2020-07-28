@@ -1,0 +1,26 @@
+#!/bin/bash -eu
+
+function fail {
+	echo FAILURE
+}
+trap fail EXIT
+
+
+if [[ ${BASH_SOURCE} == $0 ]]; then
+
+	# Parse command line
+	while getopts "x" opt; do
+		case "$opt" in 
+			x) set -x;;
+		esac
+	done
+	shift $(($OPTIND-1))
+
+	cmd="${1:-none}"
+	case $cmd in
+	debug)  debug ;;
+	esac
+fi
+
+trap - EXIT
+echo SUCCESS
