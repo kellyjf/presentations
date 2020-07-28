@@ -8,13 +8,45 @@ import database as db
 
 global sess
 
+me=re.compile("([0-9a-f]+)\-([0-9a-f]+)\s+([-rwxsp]+)\s+([0-9a-f]+)\s*([:0-9a-f]+)\s+(\d*)\s*(\S*)\s*$")
+un=re.compile("[0-9a-f]+:name=(\S*)\s*$")
+mm=re.compile("(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$")
+pr=re.compile("(\d+)\s+\(.+\)\s+([RSDZTW])\s+(\d+)\s+.*$")
+
 def process_pid(pid):
-	me=re.compile("([0-9a-f]+)\-([0-9a-f]+)\s+([-rwxp]+)\s+([0-9a-f]+)\s*([:0-9a-f]+)\s+(\d*)\s*(\S*)\s*$")
+
+	proc=db.Process(pid=pid)
+
 	with open("/proc/{}/cmdline".format(pid), "r") as f:
 		cmd=f.read().replace('\x00',' ')
-		proc=db.Process(id=pid,command=cmd)
 		print "PROC: ",pid,cmd
-		sess.add(proc)
+		proc.command=cmd
+
+	with open("/proc/{}/cgroup".format(pid), "r") as f:
+		for line in f:
+			res=un.match(line)
+			if res:
+				proc.scope=res.group(1)
+
+	with open("/proc/{}/statm".format(pid), "r") as f:
+		for line in f:
+			res=mm.match(line)
+			if res:
+				(size,rss,share,text,_,data,_)=res.groups()
+				proc.size=size
+				proc.rss=rss
+				proc.share=share
+				proc.text=text
+				proc.data=data
+
+	with open("/proc/{}/stat".format(pid), "r") as f:
+		for line in f:
+			res=pr.match(line)
+			if res:
+				(pid,state,ppid)=res.groups()
+				proc.ppid=ppid
+
+	sess.add(proc)
 
 	with open("/proc/{}/maps".format(pid), "r") as f:
 		for line in f:

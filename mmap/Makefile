@@ -2,4 +2,4 @@
 
 all:
 	rm -f  mmap.sqlite
-	./mmap.py
+	./mmap.py -c -g -r

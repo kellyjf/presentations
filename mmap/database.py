@@ -22,14 +22,21 @@ class Mapping(Base):
 	device  = Column(String)
 	inode  = Column(Integer)
 	filename  = Column(String)
-	pid = Column(Integer,ForeignKey("processes.id"))
+	pid = Column(Integer,ForeignKey("processes.pid"))
 	process = relationship("Process",back_populates='mappings')
 
 class Process(Base):
 	__tablename__ = "processes"
 
-	id = Column(Integer, primary_key=True)
+	pid = Column(Integer, primary_key=True)
+	ppid = Column(Integer)
 	command  = Column(String)
+	scope  = Column(String)
+	size = Column(Integer)
+	rss = Column(Integer)
+	share = Column(Integer)
+	text = Column(Integer)
+	data = Column(Integer)
 	mappings = relationship("Mapping",back_populates='process')
 
 def create():
