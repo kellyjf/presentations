@@ -69,21 +69,43 @@ def process_pid(pid):
 
 def report():
 
-	maps=sess.query(db.Mapping,db.func.sum(db.Mapping.maplen))\
+	if False:
+		maps=sess.query(db.Mapping,db.func.sum(db.Mapping.maplen))\
 		.filter(db.Mapping.perms.like('%w%'))\
 		.group_by(db.Mapping.pid,db.Mapping.perms)\
 		.order_by(db.func.sum(db.Mapping.maplen).desc())\
 		.all()
+	maps=sess.query(db.Mapping,db.func.sum(db.Mapping.maplen))\
+		.filter(db.Mapping.perms.like('%w%p'))\
+		.group_by(db.Mapping.pid)\
+		.order_by(db.func.sum(db.Mapping.maplen).desc())\
+		.all()
 
 	for m in maps:
-		print "WMEM {3:>12d} {2.pid:5d} {2.command:<35.35s} {2.scope:<35s} {1.perms} {2.rss}".format(m[0],m[0],m[0].process,m[1])
+		if args.tabs:
+			(mdat,pdat,sdat)=(m[0],m[0].process,m[1])
+			print "\t".join([str(x) for x in [sdat,pdat.rss*4096,mdat.pid,mdat.perms,pdat.scope.split("/")[-1],pdat.rss,pdat.command]])
+		else:
+			print "WMEM {3:>12d} {2.pid:5d} {2.command:<35.35s} {2.scope:<35s} {1.perms} {2.rss}".format(m[0],m[0],m[0].process,m[1])
 
+	maps=sess.query(db.func.sum(db.Mapping.maplen))\
+		.filter(db.Mapping.perms.like('%w%p'))\
+		.order_by(db.func.sum(db.Mapping.maplen).desc())\
+		.all()
+	for m in maps:
+		print "WMEM:",m[0]
+	maps=sess.query(db.func.sum(db.Process.rss))\
+		.order_by(db.func.sum(db.Process.rss).desc())\
+		.all()
+	for m in maps:
+		print "RSS:",4096*m[0]
 
 if __name__ == "__main__":
 	parser=argparse.ArgumentParser()
 	parser.add_argument("--create", "-c", default=False, action="store_true")
 	parser.add_argument("--report", "-r", default=False, action="store_true")
 	parser.add_argument("--gather", "-g", default=False, action="store_true")
+	parser.add_argument("--tabs", "-t", default=False, action="store_true")
 	args=parser.parse_args()
 
 	if args.create:
@@ -98,11 +120,11 @@ if __name__ == "__main__":
 				process_pid(pid)	
 			except IOError :
 				pass
+	sess.commit()
 
 	if args.report:
 		report()
 
-	sess.commit()
 	
 	print("Hello")
 
