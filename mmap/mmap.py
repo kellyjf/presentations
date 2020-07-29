@@ -68,15 +68,17 @@ def process_pid(pid):
 
 
 def report():
-	heap=sess.query(db.Mapping,db.func.sum(db.Mapping.maplen)).filter(db.Mapping.device=="00:00").group_by(db.Mapping.pid,db.Mapping.perms).order_by(db.func.sum(db.Mapping.maplen).desc()).all()
 
-	for m in heap:
-		print "HEAP {2} {1:>12d} {0}".format(m[0].process.command,m[1],m[0].perms)
-
-	maps=sess.query(db.Mapping,db.func.sum(db.Mapping.maplen)).filter(db.Mapping.perms.like('%w%')).group_by(db.Mapping.pid,db.Mapping.perms).order_by(db.func.sum(db.Mapping.maplen).desc()).all()
+	maps=sess.query(db.Mapping,db.func.sum(db.Mapping.maplen))\
+		.filter(db.Mapping.perms.like('%w%'))\
+		.group_by(db.Mapping.pid,db.Mapping.perms)\
+		.order_by(db.func.sum(db.Mapping.maplen).desc())\
+		.all()
 
 	for m in maps:
-		print "MAP  {1:>12d} {0:<20s} {2}".format(m[0].process.command,m[1],m[0].filename)
+		print "WMEM {3:>12d} {2.pid:5d} {2.command:<35.35s} {2.scope:<35s} {1.perms} {2.rss}".format(m[0],m[0],m[0].process,m[1])
+
+
 if __name__ == "__main__":
 	parser=argparse.ArgumentParser()
 	parser.add_argument("--create", "-c", default=False, action="store_true")
