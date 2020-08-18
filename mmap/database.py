@@ -29,6 +29,7 @@ class Mapping(Base):
 	__tablename__ = "mappings"
 
 	id = Column(Integer,primary_key=True)
+	marktime = Column(DateTime)
 	mapaddr  = Column(Integer)
 	mapend  = Column(Integer)
 	maplen  = Column(Integer)
@@ -39,7 +40,6 @@ class Mapping(Base):
 	filename  = Column(String)
 	#pid = Column(Integer,ForeignKey("processes.pid"))
 	pid = Column(Integer)
-	marktime = Column(DateTime,primary_key=True)
 	process = relationship("Process",back_populates='mappings')
 	__table_args__ = (ForeignKeyConstraint([marktime,pid],[Process.marktime,Process.pid]),{})
 
