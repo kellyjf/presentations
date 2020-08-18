@@ -5,6 +5,7 @@ import re
 import os
 import argparse
 import database as db
+from datetime import datetime as dt
 
 global sess
 
@@ -15,7 +16,9 @@ pr=re.compile("(\d+)\s+\(.+\)\s+([RSDZTW])\s+(\d+)\s+.*$")
 
 def process_pid(pid):
 
+	now = dt.now()
 	proc=db.Process(pid=pid)
+	proc.marktime=now
 
 	with open("/proc/{}/cmdline".format(pid), "r") as f:
 		cmd=f.read().replace('\x00',' ')
@@ -33,6 +36,7 @@ def process_pid(pid):
 			res=mm.match(line)
 			if res:
 				(size,rss,share,text,_,data,_)=res.groups()
+				proc.marktime=now
 				proc.size=size
 				proc.rss=rss
 				proc.share=share

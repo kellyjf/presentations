@@ -3,12 +3,27 @@
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker,relationship
-from sqlalchemy import create_engine, Column, Integer, String, Unicode, DateTime, ForeignKey, func
+from sqlalchemy import create_engine, Column, Integer, String, Unicode, DateTime, ForeignKey, ForeignKeyConstraint, func
 
 
 Base=declarative_base()
 engine=create_engine("sqlite:///mmap.sqlite")
 Session=sessionmaker(bind=engine)
+
+class Process(Base):
+	__tablename__ = "processes"
+
+	marktime = Column(DateTime,primary_key=True)
+	pid = Column(Integer, primary_key=True)
+	ppid = Column(Integer)
+	command  = Column(String)
+	scope  = Column(String)
+	size = Column(Integer)
+	rss = Column(Integer)
+	share = Column(Integer)
+	text = Column(Integer)
+	data = Column(Integer)
+	mappings = relationship("Mapping",back_populates='process')
 
 class Mapping(Base):
 	__tablename__ = "mappings"
@@ -22,22 +37,13 @@ class Mapping(Base):
 	device  = Column(String)
 	inode  = Column(Integer)
 	filename  = Column(String)
-	pid = Column(Integer,ForeignKey("processes.pid"))
+	#pid = Column(Integer,ForeignKey("processes.pid"))
+	pid = Column(Integer)
+	marktime = Column(DateTime,primary_key=True)
 	process = relationship("Process",back_populates='mappings')
+	__table_args__ = (ForeignKeyConstraint([marktime,pid],[Process.marktime,Process.pid]),{})
 
-class Process(Base):
-	__tablename__ = "processes"
 
-	pid = Column(Integer, primary_key=True)
-	ppid = Column(Integer)
-	command  = Column(String)
-	scope  = Column(String)
-	size = Column(Integer)
-	rss = Column(Integer)
-	share = Column(Integer)
-	text = Column(Integer)
-	data = Column(Integer)
-	mappings = relationship("Mapping",back_populates='process')
 
 def create():
 	Base.metadata.create_all(engine)
