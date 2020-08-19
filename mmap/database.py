@@ -44,6 +44,13 @@ class Mapping(Base):
 	__table_args__ = (ForeignKeyConstraint([marktime,pid],[Process.marktime,Process.pid]),{})
 
 
+class Meminfo(Base):
+	__tablename__ = "meminfos"
+
+	id = Column(Integer,primary_key=True)
+	marktime = Column(DateTime)
+	key  = Column(String)
+	value  = Column(Integer)
 
 def create():
 	Base.metadata.create_all(engine)

@@ -14,6 +14,16 @@ me=re.compile("([0-9a-f]+)\-([0-9a-f]+)\s+([-rwxsp]+)\s+([0-9a-f]+)\s*([:0-9a-f]
 un=re.compile("[0-9a-f]+:name=(\S*)\s*$")
 mm=re.compile("(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$")
 pr=re.compile("(\d+)\s+\(.+\)\s+([RSDZTW])\s+(\d+)\s+.*$")
+mi=re.compile("(\S+):\s*(\d+) kB.*$")
+
+def process_sys(now):
+	with open("/proc/meminfo", "r") as f:
+		for line in f:
+			res=mi.match(line)
+			if res:
+				(key,value)=res.groups()
+				info=db.Meminfo(marktime=now,key=key,value=value)
+				sess.add(info)
 
 def process_pid(pid,now):
 
@@ -129,6 +139,7 @@ if __name__ == "__main__":
 					process_pid(pid,now)	
 				except IOError :
 					pass
+			process_sys(now)
 			sess.commit()
 			if args.interval:
 				time.sleep(args.interval)
