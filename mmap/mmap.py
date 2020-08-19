@@ -14,6 +14,7 @@ me=re.compile("([0-9a-f]+)\-([0-9a-f]+)\s+([-rwxsp]+)\s+([0-9a-f]+)\s*([:0-9a-f]
 un=re.compile("[0-9a-f]+:name=(\S*)\s*$")
 mm=re.compile("(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$")
 pr=re.compile("(\d+)\s+\(.+\)\s+([RSDZTW])\s+(\d+)\s+.*$")
+pr=re.compile("(\d+)\s+\(.+\)\s+([^\)]*)$")
 mi=re.compile("(\S+):\s*(\d+) kB.*$")
 
 def process_sys(now):
@@ -57,8 +58,12 @@ def process_pid(pid,now):
 		for line in f:
 			res=pr.match(line)
 			if res:
-				(pid,state,ppid)=res.groups()
-				proc.ppid=ppid
+				(pid,rest)=res.groups()
+				field=rest.split(" ")
+				proc.ppid=field[1]
+				proc.minflt=field[7]
+				proc.majflt=field[9]
+				proc.nswap=field[33]
 
 	sess.add(proc)
 

@@ -23,6 +23,9 @@ class Process(Base):
 	share = Column(Integer)
 	text = Column(Integer)
 	data = Column(Integer)
+	minflt = Column(Integer)
+	majflt = Column(Integer)
+	nswap = Column(Integer)
 	mappings = relationship("Mapping",back_populates='process')
 
 class Mapping(Base):
